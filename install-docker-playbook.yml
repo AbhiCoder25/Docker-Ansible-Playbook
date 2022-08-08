@@ -1,28 +1,54 @@
-- hosts: all
+- name: install docker
+  
+  hosts: all
+
   become: yes
 
   tasks:
-    - name: update and install dependencies
+    - name: Update Repository cache
+
       apt:
-        name:
-          - apt-transport-https
-          - ca-certificates
-          - curl
-          - software-properties-common
-        update_cache: yes
-    - name: add key repo
+
+        update_cache: true
+
+        cache_valid_time: 3600
+
+        force_apt_get: true
+
+    - name: Install required system packages
+
+      apt: name={{ item }} state=latest
+
+      loop: [ 'apt-transport-https','ca-certificates','curl','software-properties-common','python3-pip','python-pip','python3-setuptools']
+
+
+    - name: Add docker gpg key
+
       apt_key:
+
         url: https://download.docker.com/linux/ubuntu/gpg
         state: present
-    - name: add docker repo
-      apt_repository:
-        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
-        state: present
-        filename: docker
-    - name: install docker-ce
-      apt:
-        name: docker-ce
-        state: present
+
+    - name: add docker apt repo
+      become: yes
+      ansible.builtin.apt_repository:
+
+       repo: deb https://download.docker.com/linux/ubuntu focal stable
+
+       state: present
+
+       filename: docker
+
+    - name: Install Docker module for python
+
+      pip:
+       name: docker
+
+
+    - name: Update apt and install docker-ce
+
+      apt: update_cache=yes name=docker-ce state=latest
+
     - name: make sure docker is running
       ansible.builtin.service:
         name: docker
